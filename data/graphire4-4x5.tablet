@@ -29,3 +29,7 @@ Buttons=2
 
 [Buttons]
 Top=A;B
+
+[MouseButtons]
+Back=A
+Forward=B

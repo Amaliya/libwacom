@@ -121,6 +121,15 @@ int main(int argc, char **argv)
 	assert(device);
 	assert(libwacom_is_builtin(device));
 
+	libwacom_destroy(device);
+
+	device = libwacom_new_from_name(db, "Wacom Graphire4 4x5", NULL);
+	assert(device);
+	assert(libwacom_get_button_flag(device, 'A') & WMOUSE_BACK);
+	assert(libwacom_get_button_flag(device, 'B') & WMOUSE_FORWARD);
+
+	libwacom_destroy(device);
+
 	libwacom_database_destroy (db);
 
 	return 0;

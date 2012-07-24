@@ -41,6 +41,7 @@
 #define FEATURES_GROUP "Features"
 #define DEVICE_GROUP "Device"
 #define BUTTONS_GROUP "Buttons"
+#define MOUSEBUTTONS_GROUP "MouseButtons"
 
 static WacomClass
 libwacom_class_string_to_enum(const char *class)
@@ -246,6 +247,26 @@ struct {
 	{ "OLEDs", WACOM_BUTTON_OLED }
 };
 
+static int
+libwacom_button_to_index (const char *button)
+{
+	char val;
+
+	if (button == NULL)
+		return -1;
+
+	val = *button;
+	if (strlen (button) > 1 ||
+	    val < 'A' ||
+	    val > 'Z') {
+		return -2;
+	}
+	val -= 'A';
+
+	g_assert (val >= 0);
+	return val;
+}
+
 static void
 libwacom_parse_buttons_key(WacomDevice      *device,
 			   GKeyFile         *keyfile,
@@ -259,17 +280,12 @@ libwacom_parse_buttons_key(WacomDevice      *device,
 	if (vals == NULL)
 		return;
 	for (i = 0; vals[i] != NULL; i++) {
-		char val;
-
-		val = *vals[i];
-		if (strlen (vals[i]) > 1 ||
-		    val < 'A' ||
-		    val > 'Z') {
+		int index = libwacom_button_to_index(vals[i]);
+		if (index < 0) {
 			g_warning ("Ignoring value '%s' in key '%s'", vals[i], key);
 			continue;
 		}
-		val -= 'A';
-		device->buttons[(int) val] |= flag;
+		device->buttons[index] |= flag;
 	}
 
 	g_strfreev (vals);
@@ -306,6 +322,49 @@ libwacom_parse_buttons(WacomDevice *device,
 	device->ring_num_modes = libwacom_parse_num_modes(device, keyfile, "RingNumModes", WACOM_BUTTON_RING_MODESWITCH);
 	device->ring2_num_modes = libwacom_parse_num_modes(device, keyfile, "Ring2NumModes", WACOM_BUTTON_RING2_MODESWITCH);
 	device->strips_num_modes = libwacom_parse_num_modes(device, keyfile, "StripsNumModes", WACOM_BUTTON_TOUCHSTRIP_MODESWITCH);
+}
+
+struct {
+	const char       *key;
+	WacomMouseButton  button;
+} mouseoptions[] = {
+	{ "Left", WMOUSE_LEFT },
+	{ "Middle", WMOUSE_MIDDLE },
+	{ "Right", WMOUSE_RIGHT },
+	{ "Forward", WMOUSE_FORWARD },
+	{ "Back", WMOUSE_BACK },
+};
+
+static void
+libwacom_parse_mousebuttons_key (WacomDevice      *device,
+				 GKeyFile         *keyfile,
+				 const char       *key,
+				 WacomMouseButton  button)
+{
+	guint i;
+	char **vals;
+
+	vals = g_key_file_get_string_list (keyfile, MOUSEBUTTONS_GROUP, key, NULL, NULL);
+	if (vals == NULL)
+		return;
+	for (i = 0; vals[i] != NULL; i++) {
+		int index = libwacom_button_to_index (vals[i]);
+		if (index < 0) {
+			g_warning ("Ignoring value '%s' in key '%s'", vals[i], key);
+			continue;
+		}
+		device->buttons[index] |= button;
+	}
+}
+
+static void
+libwacom_parse_mousebuttons (WacomDevice *device,
+			     GKeyFile    *keyfile)
+{
+	guint i;
+
+	for (i = 0; i < G_N_ELEMENTS (mouseoptions); i++)
+		libwacom_parse_mousebuttons_key (device, keyfile, mouseoptions[i].key, mouseoptions[i].button);
 }
 
 static WacomDevice*
@@ -412,6 +471,7 @@ libwacom_parse_tablet_keyfile(const char *path)
 	if (device->num_buttons > 0) {
 		device->buttons = g_new0 (WacomButtonFlags, device->num_buttons);
 		libwacom_parse_buttons(device, keyfile);
+		libwacom_parse_mousebuttons(device, keyfile);
 	}
 
 out:
