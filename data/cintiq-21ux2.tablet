@@ -1,5 +1,5 @@
 # Wacom
-# Cintiq 21UX2
+# Cintiq 21UX
 # DTK-2100
 #
 # Button Map:
@@ -43,7 +43,7 @@
 #
 
 [Device]
-Name=Wacom Cintiq 21UX2
+Name=Wacom Cintiq 21UX
 DeviceMatch=usb:056a:00cc
 Class=Cintiq
 Width=17
